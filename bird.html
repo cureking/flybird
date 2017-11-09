@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <!--
+    背景//
+    地面//
+    两个柱子//
+    小鸟//
+    小鸟翅膀飞//
+    小鸟下落//
+    柱子移动 长度会变化//
+    空格键  py - 10//
+
+    撞到地面
+    柱子    gameover
+    分数
+    -->
+    <meta charset="UTF-8">
+    <title>xiaoniao</title>
+    <script type="text/javascript">
+
+        var ctx;//画布
+        var objects = [];//存储要 显示到界面上的一些元素
+        var v1 = 10;
+        var v2;
+        
+        var birds_src = ['images/0.gif','images/1.gif','images/2.gif'];
+        var birdIndex = 0;
+
+        var space = 200;//间隔
+        var time;//定时器
+        var score = 0;//分数
+        var isadd = false;
+
+
+        //根据自己 定义的构造函数  创建对象
+        var back = new Background(0,0,400,600,'images/bg.png');
+        var ground = new Background(0,550,400,200,'images/ground.png');
+        var uppipe = new Uppipe(0,0,100,200,'images/pipe.png');
+        var downpipe = new Downpipe(0,400,100,150,'images/pipe.png');
+        var  bird = new Bird(80,300,40,40,birds_src);
+        //把对象放到数组中
+        objects.push(back);
+        objects.push(ground);
+        objects.push(uppipe);
+        objects.push(downpipe);
+        objects.push(bird);
+
+        //背景构造函数
+        function Background(x,y,width,height,img_src) {
+            this.bgx = x;
+            this.bgy = y;
+            this.bgwidth = width;
+            this.bgheight = height;
+            var img = new Image();
+            img.src = img_src;
+            this.img = img;
+            this.draw = drawbg;
+        }
+        //画背景图片
+        function drawbg() {
+            ctx.drawImage(this.img,this.bgx,this.bgy,this.bgwidth,this.bgheight);
+        }
+        //上面管道构造函数
+        function Uppipe(x,y,width,height,img_src) {
+            this.px = x;
+            this.py = y;
+            this.pwidth = width;
+            this.pheight = height;
+            var img = new Image();
+            img.src = img_src;
+            this.img = img;
+            this.draw = drawUpPipe;
+
+        }
+        //画上面管道
+        function drawUpPipe() {
+            //截取一个图片的一部分  画到画布上面
+            ctx.drawImage(this.img,165,500,120,800,this.px,this.py,this.pwidth,this.pheight);
+        }
+
+        //下面管道的构造函数
+        function Downpipe(x,y,width,height,img_src) {
+            this.px = x;
+            this.py = y;
+            this.pwidth = width;
+            this.pheight = height;
+            var img = new Image();
+            img.src = img_src;
+            this.img = img;
+            this.draw = drawDownPipe;
+        }
+        //画下面管道
+        function drawDownPipe() {
+            ctx.drawImage(this.img,15,500,120,770,this.px,this.py,this.pwidth,this.pheight);
+        }
+        //小鸟的构造函数
+        function Bird(x,y,width,height,img_srcs) {
+            this.bx = x;
+            this.by = y;
+            this.bwidth = width;
+            this.bheight = height;
+            this.srcs = img_srcs;
+            var img = new Image();
+            img.src = img_srcs[0];
+            this.img = img;
+            this.draw  = drawBird;
+        }
+        //画小鸟
+        function drawBird() {
+            this.img.src = this.srcs[birdIndex%3];
+            birdIndex++;
+            ctx.drawImage(this.img,this.bx,this.by,this.bwidth,this.bheight);
+        }
+
+        function calculator() {
+            //画完一次界面以后 会计算新的坐标   判断是否挂了
+            //柱子左移动
+            if(uppipe.px + uppipe.pwidth> 0){
+                //柱子向左移动
+                uppipe.px -= 15;
+                downpipe.px -=15;
+            }else {
+                //循环 柱子从右边出现
+                uppipe.px = 400;
+                downpipe.px =400;
+                //100--300
+                uppipe.pheight = 100+Math.random()*200;
+                downpipe.py = space + uppipe.pheight
+                downpipe.pheight = 600 - downpipe.py -50;
+                isadd = true;
+            }
+
+            //小鸟下落
+            v2= v1 + 2;
+            bird.by += (v1+ v2)/2;
+
+            //碰撞  地面  柱子  游戏结束   停止定时器
+            //判断碰撞
+            if(bird.by+bird.bheight>ground.bgy ||
+                    ((bird.bx+bird.bwidth>uppipe.px)&&(bird.by>uppipe.py)&&(bird.bx+bird.bwidth<uppipe.px+uppipe.pwidth)&&(	bird.by<uppipe.py+uppipe.pheight))||
+                    ((bird.bx+bird.bwidth>uppipe.px)&&(bird.by>uppipe.py)&&(bird.bx+bird.bwidth<uppipe.px+uppipe.pwidth)&&(	bird.by<uppipe.py+uppipe.pheight))||
+                    ((bird.bx+bird.bwidth>downpipe.px)&&(bird.by+bird.bheight>downpipe.py)&&(bird.bx+bird.bwidth<downpipe.px+downpipe.pwidth)&&(bird.by+bird.bheight<downpipe.py+downpipe.pheight))||
+                    ((bird.bx>downpipe.px)&&(bird.by+bird.bheight>downpipe.py)&&(bird.bx<downpipe.px+downpipe.pwidth)&&(bird.by+bird.bheight<downpipe.py+downpipe.pheight))){
+                //停止定时器 不在更新界面
+                clearInterval(time);
+            }
+
+            //判断是否分数+1
+            if (isadd && bird.bx > uppipe.px+uppipe.pwidth){
+                score++;
+                isadd = false;
+            }
+            //画文字 白色 分数
+            ctx.fillStyle = "rgb(255,255,255)"
+            ctx.font = "30px Accent";
+            ctx.fillText(score,180,100);
+        }
+
+
+        function drawall() {
+            ctx.clearRect(0,0,400,600);
+            for (var i = 0;i < objects.length;i++){
+                objects[i].draw();
+            }
+            //画完一次界面以后 会计算新的坐标   判断是否挂了
+            calculator();
+        }
+
+
+        //当body加载完成后调用
+        function init() {
+           //画布
+            ctx = document.getElementById('canvas').getContext('2d');
+            //响应键盘事件
+            document.onkeydown = function (event) {
+                var e = event||window.event;
+                //如果是空格键   32
+                if (e.keyCode == 32){
+                    bird.by -= 50;
+                }
+            }
+
+            //定时器 每100  调用一次函数drawall
+            time = setInterval(drawall,100)
+
+        }
+
+    </script>
+</head>
+
+<body onload="init()">
+<!--画布标签-->
+
+<canvas id="canvas" width="400px" height="600px">
+</canvas>
+</body>
+</html>
